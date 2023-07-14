@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import { onRequest } from 'firebase-functions/v2/https';
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 import { queryConfig, systemMessage } from './query-config';
 import { idGenerator } from './id-generator';
@@ -11,9 +11,9 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 const cache: Record<number, Array<ChatCompletionRequestMessage>> = {};
 
-export const guess = functions
-  .runWith({ secrets: ['OPENAI_API_KEY'] })
-  .https.onRequest(async (request, response) => {
+export const guess = onRequest(
+  { secrets: ['OPENAI_API_KEY'] },
+  async (request, response) => {
     const { id = generateId(), answer } = request.query;
     const parsedId = id as number;
     const parsedAnswer = answer as string;
@@ -39,4 +39,5 @@ export const guess = functions
       question: lastQuestion,
       id,
     });
-  });
+  }
+);
