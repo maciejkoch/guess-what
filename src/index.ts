@@ -1,19 +1,32 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as functions from 'firebase-functions';
+import { Configuration, OpenAIApi } from 'openai';
 
-import {onRequest} from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+const task = `Zadawaj proste pytania aby odgadnąć jakim zwierzęciem jestem. Możliwie odpowiedzi to tak, nie, nie wiem. Pytaj tak długo aż odgadniesz.`;
+const properties = {
+  model: 'gpt-3.5-turbo',
+  temperature: 1,
+  max_tokens: 256,
+  top_p: 1,
+  frequency_penalty: 0,
+  presence_penalty: 0,
+};
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+export const guess = functions
+  .runWith({ secrets: ['OPENAI_API_KEY'] })
+  .https.onRequest(async (request, response) => {
+    const data = await openai.createChatCompletion({
+      ...properties,
+      messages: [
+        {
+          role: 'system',
+          content: task,
+        },
+      ],
+    });
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    response.send(data.data);
+  });
