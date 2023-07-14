@@ -27,5 +27,7 @@ module.exports = {
     indent: ['error', 2],
     'object-curly-spacing': ['error', 'always'],
     'max-len': ['error', { code: 200 }],
+    'operator-linebreak': 'off',
+    'require-jsdoc': 'off',
   },
 };

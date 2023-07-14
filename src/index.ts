@@ -1,32 +1,42 @@
 import * as functions from 'firebase-functions';
-import { Configuration, OpenAIApi } from 'openai';
+import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
+import { queryConfig, systemMessage } from './query-config';
+import { idGenerator } from './id-generator';
+import { last } from 'lodash';
 
+const generateId = idGenerator();
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
-const task = `Zadawaj proste pytania aby odgadnąć jakim zwierzęciem jestem. Możliwie odpowiedzi to tak, nie, nie wiem. Pytaj tak długo aż odgadniesz.`;
-const properties = {
-  model: 'gpt-3.5-turbo',
-  temperature: 1,
-  max_tokens: 256,
-  top_p: 1,
-  frequency_penalty: 0,
-  presence_penalty: 0,
-};
+const cache: Record<number, Array<ChatCompletionRequestMessage>> = {};
 
 export const guess = functions
   .runWith({ secrets: ['OPENAI_API_KEY'] })
   .https.onRequest(async (request, response) => {
-    const data = await openai.createChatCompletion({
-      ...properties,
-      messages: [
-        {
-          role: 'system',
-          content: task,
-        },
-      ],
+    const { id = generateId(), answer } = request.query;
+    const parsedId = id as number;
+    const parsedAnswer = answer as string;
+
+    const context = cache[parsedId] || [systemMessage];
+    const userAnswer: ChatCompletionRequestMessage = {
+      role: 'user',
+      content: parsedAnswer,
+    };
+    const messages = answer ? [...context, userAnswer] : context;
+
+    const chatResponse = await openai.createChatCompletion({
+      ...queryConfig,
+      messages,
     });
 
-    response.send(data.data);
+    const question = chatResponse.data.choices[0].message;
+    cache[parsedId] = question ? [...messages, question] : messages;
+
+    const lastQuestion = last(cache[parsedId])?.content;
+
+    response.send({
+      question: lastQuestion,
+      id,
+    });
   });
