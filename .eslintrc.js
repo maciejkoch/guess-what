@@ -26,7 +26,7 @@ module.exports = {
     'import/no-unresolved': 0,
     indent: ['error', 2],
     'object-curly-spacing': ['error', 'always'],
-    'max-len': ['error', { code: 200 }],
+    'max-len': ['error', { code: 400 }],
     'operator-linebreak': 'off',
     'require-jsdoc': 'off',
   },
