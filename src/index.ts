@@ -1,21 +1,20 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
 import { queryConfig, systemMessage } from './query-config';
-import { idGenerator } from './id-generator';
 import { last } from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 
-const generateId = idGenerator();
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
-const cache: Record<number, Array<ChatCompletionRequestMessage>> = {};
+const cache: Record<string, Array<ChatCompletionRequestMessage>> = {};
 
 export const guess = onRequest(
   { secrets: ['OPENAI_API_KEY'], cors: true },
   async (request, response) => {
-    const { id = generateId(), answer } = request.query;
-    const parsedId = id as number;
+    const { id = uuidv4(), answer } = request.query;
+    const parsedId = id as string;
     const parsedAnswer = answer as string;
 
     const context = cache[parsedId] || [systemMessage];
