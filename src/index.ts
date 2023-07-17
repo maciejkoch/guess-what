@@ -12,7 +12,7 @@ const openai = new OpenAIApi(configuration);
 const cache: Record<number, Array<ChatCompletionRequestMessage>> = {};
 
 export const guess = onRequest(
-  { secrets: ['OPENAI_API_KEY'] },
+  { secrets: ['OPENAI_API_KEY'], cors: true },
   async (request, response) => {
     const { id = generateId(), answer } = request.query;
     const parsedId = id as number;
@@ -37,6 +37,7 @@ export const guess = onRequest(
 
     response.send({
       question: lastQuestion,
+      context: cache[parsedId],
       id,
     });
   }
